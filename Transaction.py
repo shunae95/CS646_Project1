@@ -6,13 +6,13 @@ import os
 
 class Transaction:
     def createTransaction(self):
-        currentTime = datetime.datetime.now()
-        self.time = datetime.datetime.timestamp(currentTime)*1000
         self.sender = input("Sender: ")
         self.recipient = input("Recipient: ")
         self.amount = float(input("Enter transaction amount: "))
-
-        return self.time, self.sender, self.recipient, self.amount
+        currentTime = datetime.datetime.now()
+        self.time = int(datetime.datetime.timestamp(currentTime)*1000)
+        
+        return "{" + f'"timestamp":{self.time},"from":"{self.sender}","to":"{self.recipient}","amount":{self.amount}' + "}"
         
 
 
