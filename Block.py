@@ -42,4 +42,4 @@ class Block:
     def completedTransaction(self, hash):
         self.completedTransactions.append(hash)
 if __name__ == "__main__":
-    print(Block(2).data)
+    print(Block(0, "NA").data)
