@@ -1,4 +1,19 @@
-# CS646_Project1
+<img src="UABCS.jpg" width=350>
+
+# CS 646 Blockchain and Cryptocurrency - Fall 2022
+
+# Group 2 - Project 1
+
+
+## Authors
+- [Tiara King](https://github.com/shunae95)
+- [AJ Nettles](https://github.com/DelMonteAJ)
+- [Leigh Allison](https://github.com/Ldallison)
+  
+<a href="https://github.com/shunae95/CS646_Project1/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=shunae95/CS646_Project1" />
+</a>
+
 
 ##  How to run project
 1.  Run the Main.py, executing this file will prompt the user for the needed information to generate a transaction.
