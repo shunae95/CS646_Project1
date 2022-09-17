@@ -1,3 +1,9 @@
+"""
+We Tiara King, AJ Nettles, and Leigh Allison declare that we have completed this computer code in accordance with the UAB Academic Integrity Code and the UAB CS Honor Code.  
+We have read the UAB Academic Integrity Code and understand that any breach of the Code may result in severe penalties.	
+Student signature(s)/initials: TK, AN, LA
+Date: 2022-09-17
+"""
 import hashlib
 import time
 class Block:
