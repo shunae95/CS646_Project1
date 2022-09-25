@@ -3,6 +3,8 @@ We Tiara King, AJ Nettles, and Leigh Allison declare that we have completed this
 We have read the UAB Academic Integrity Code and understand that any breach of the Code may result in severe penalties.	
 Student signature(s)/initials: TK, AN, LA
 Date: 2022-09-21
+
+Code samples taken from python cryptography package documentation at https://cryptography.io/en/latest/.
 """
 import os
 from os.path import exists
