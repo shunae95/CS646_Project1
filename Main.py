@@ -8,8 +8,21 @@ import hashlib
 import os
 from Transaction import Transaction
 from Block import Block
+from wallet1.Wallet import Wallet as wallet_one
+from wallet2.Wallet import Wallet as wallet_two
+from wallet3.Wallet import Wallet as wallet_three
 
 def main():
+    # Instantiate 3 separate wallets, each with its own key pairs and address
+    instantiate_wallets = input("Would you like to instantiate the 3 wallets? ").lower()
+    if instantiate_wallets == "y" or addTransaction == "yes":
+        wallet_1 = wallet_one()
+        wallet_2 = wallet_two()
+        wallet_3 = wallet_three()
+        print(f"Wallet 1 address: {wallet_1.address}")
+        print(f"Wallet 2 address: {wallet_2.address}")
+        print(f"Wallet 3 address: {wallet_3.address}")
+
     dirName = os.path.dirname(__file__) # Variable to gain easy access to directory of current folder
     transactions = [] # Array that stores transactions
     addingTransactions = True # Variable that continues the loop if we are adding transactions

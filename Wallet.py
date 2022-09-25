@@ -6,15 +6,20 @@ Date: 2022-09-21
 """
 import os
 from os.path import exists as file_exists
+import hashlib
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+import base64
 
 class Wallet:
     def __init__(self):
+        pw = 'mypassword'
+        self.password = pw.encode("utf-8")
         self.dirName = os.path.dirname(__file__) # Get current folder
-        self.pemFileName = f"{self.dirName}\\privkey.pem"
-        self.privkey = self.getOrCreatePem()
+        self.pemFileName = f"{self.dirName}\\privkey.pem" 
+        self.privkey = self.getOrCreatePem() 
         self.pubkey = self.privkey.public_key()
+        self.address = self.getOrCreateAddress()
 
     def createPem(self):
         """
@@ -26,7 +31,7 @@ class Wallet:
         pem = private_key.private_bytes(
             encoding = serialization.Encoding.PEM,
             format = serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption(b'mypassword')
+            encryption_algorithm=serialization.BestAvailableEncryption(self.password)
         )
         with open(self.pemFileName,"wb") as f:
             f.write(pem)
@@ -41,13 +46,21 @@ class Wallet:
         with open(self.pemFileName,"rb") as f:
             privkey = serialization.load_pem_private_key(
             f.read(),
-            password=b"mypassword",
+            password=self.password,
             )
         return privkey
 
+    def getOrCreateAddress(self):
+        pub_key_bytes = self.pubkey.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.PKCS1,
+        )
+        addr = hashlib.sha256(base64.b64decode(pub_key_bytes)).hexdigest()
+        return addr
 
 
 if __name__ == "__main__":
     x = Wallet()
     print(x.pubkey)
     print(x.privkey)
+    print(x.address)

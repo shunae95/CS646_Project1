@@ -2,7 +2,7 @@
 
 # CS 646 Blockchain and Cryptocurrency - Fall 2022
 
-# Group 2 - Project 1
+# Group 2 - Project 2
 
 ##  How to run project
 1.  Run the Main.py, executing this file will prompt the user for the needed information to generate a transaction.
