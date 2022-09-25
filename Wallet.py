@@ -5,20 +5,25 @@ Student signature(s)/initials: TK, AN, LA
 Date: 2022-09-21
 """
 import os
-from os.path import exists as file_exists
+from os.path import exists
 import hashlib
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import base64
 
 class Wallet:
+    """
+    Creates an instance of a wallet. Will read the wallet's existing private key
+    or create a new one if one does not already exist.
+    """
     def __init__(self):
-        pw = 'mypassword'
+        pw = 'mypassword' # No password needed at this stage in the project, so default set
         self.password = pw.encode("utf-8")
         self.dirName = os.path.dirname(__file__) # Get current folder
         self.pemFileName = f"{self.dirName}\\privkey.pem" 
-        self.privkey = self.getOrCreatePem() 
-        self.pubkey = self.privkey.public_key()
+        self.__privkey = self.getOrCreatePem() 
+        self.pubkey = self.__privkey.public_key()
+        self.pubkey_bytes = self.getPubKeyBytes() # May not need this since we don't have to store it
         self.address = self.getOrCreateAddress()
 
     def createPem(self):
@@ -40,8 +45,7 @@ class Wallet:
         """
         Check to see if private key already exists. 
         If it does not, call createPem() to create a new one."""
-        pem_exists = file_exists(self.pemFileName)
-        if pem_exists == False:
+        if exists(self.pemFileName) == False:
             self.createPem()
         with open(self.pemFileName,"rb") as f:
             privkey = serialization.load_pem_private_key(
@@ -50,17 +54,19 @@ class Wallet:
             )
         return privkey
 
-    def getOrCreateAddress(self):
-        pub_key_bytes = self.pubkey.public_bytes(
+    def getPubKeyBytes(self):
+        pubkey_bytes = self.pubkey.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.PKCS1,
         )
-        addr = hashlib.sha256(base64.b64decode(pub_key_bytes)).hexdigest()
+        return pubkey_bytes
+
+    def getOrCreateAddress(self):
+        addr = hashlib.sha256(base64.b64decode(self.pubkey_bytes)).hexdigest()
         return addr
 
 
 if __name__ == "__main__":
     x = Wallet()
-    print(x.pubkey)
-    print(x.privkey)
+    print(x.pubkey_bytes)
     print(x.address)
