@@ -8,11 +8,19 @@ from time import time
 import hashlib
 
 class Transaction:
-    def __init__(self):
-        self.sender = input("Sender: ") 
-        self.recipient = input("Recipient: ")
-        self.amount = float(input("Enter transaction amount: "))
-        self.time = int(time())
+    def __init__(self, *args):
+        if (len(args) == 1):
+            jsonSplit = args[0].split(",")
+            self.time = int(jsonSplit[0].split(":")[1])
+            self.sender = jsonSplit[1].split(":")[1][1:-1]
+            self.recipient = jsonSplit[2].split(":")[1][1:-1]
+            self.amount = float(jsonSplit[3].split(":")[1][:-1])
+        else:    
+            self.sender = input("Sender: ") 
+            self.recipient = input("Recipient: ")
+            self.amount = float(input("Enter transaction amount: "))
+            self.time = int(time())
+
 
     def toJSON(self):
         # Builds string in same format as example
