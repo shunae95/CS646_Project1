@@ -7,19 +7,28 @@ Date: 2022-09-17
 from time import time
 import hashlib
 
+
+
 class Transaction:
     def __init__(self, *args):
         if (len(args) == 1):
-            jsonSplit = args[0].split(",")
-            self.time = int(jsonSplit[0].split(":")[1])
-            self.sender = jsonSplit[1].split(":")[1][1:-1]
-            self.recipient = jsonSplit[2].split(":")[1][1:-1]
-            self.amount = float(jsonSplit[3].split(":")[1][:-1])
+            if(isinstance(args[0],str)):
+                jsonSplit = args[0].split(",")
+                self.time = int(jsonSplit[0].split(":")[1])
+                self.sender = jsonSplit[1].split(":")[1][1:-1]
+                self.recipient = jsonSplit[2].split(":")[1][1:-1]
+                self.amount = float(jsonSplit[3].split(":")[1][:-1])
+            else:
+                self.sender = args[0].address
+                self.recipient = input("Recipient: ")
+                self.amount = float(input("Enter transaction amount: "))
+                self.time = int(time())
         else:    
             self.sender = input("Sender: ") 
             self.recipient = input("Recipient: ")
             self.amount = float(input("Enter transaction amount: "))
             self.time = int(time())
+
 
     def toJSON(self):
         # Builds string in same format as example
@@ -33,8 +42,9 @@ class Transaction:
         # Output: 57bc6f8255b180cbaf73f286b107be0506713b32cfe8f41af29e5c1e17f8ca6d
         return hashlib.sha256(str.encode(self.toJSON())).hexdigest()
 
+    def toBytes(self):
+        return str.encode(self.toJSON())
 if __name__ == "__main__":
-
     x = Transaction()
     print(x.toJSON())
     print(x.toEncodedJSON())

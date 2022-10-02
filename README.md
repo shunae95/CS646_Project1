@@ -5,10 +5,14 @@
 # Group 2 - Project 2
 
 ##  How to run project
-1.  Run the Main.py, executing this file will prompt the user for the needed information to generate a transaction.
-2.  After creating your transaction it will be placed in a "pending" folder that until all transactions are created.
-3.  When the user inputs that all transactions have been created, a block will be created and each transaction will be moved from the "pending" folder to a "processed" folder after being added to the block. 
-4.  To create an additional block, the user must executed the Main.py script again. Each block is created and labeled as a JSON file with the prefix "B_" followed by the block's height. The starting block will be displayed as "B_0.json".
+1.  Run the Wallet.py file for the respective wallet you wish to use.
+2.  Once executed, you will be greeted with a prompt with the following options:
+    - Check local wallet balance - Will display the balance of the current wallet.
+    - Check wallet balance using address - Will ask the user for an address and present the value associated with the respective wallet.
+    - Create a transaction - Will create a valid transaction, asking for the recipient's address along with the amount to be sent. If the digital signature assigned to the transaction does not belong to the sender, it will not be created.
+    - Process pending transactions to block - Will add all valid pending transactions to a block and release the funds to the recipient account.
+    - Exit application and process transactions - Will process pending transactions to a new block as well as closing the wallet interface.
+  
 
 ## Authors
 - [Tiara King](https://github.com/shunae95)
