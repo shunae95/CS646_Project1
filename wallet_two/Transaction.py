@@ -29,7 +29,6 @@ class Transaction:
             self.amount = float(input("Enter transaction amount: "))
             self.time = int(time())
 
-
     def toJSON(self):
         # Builds string in same format as example
         # {"timestamp":1660791892,"from":"me","to":"you","amount":100000}
@@ -45,6 +44,7 @@ class Transaction:
     def toBytes(self):
         return str.encode(self.toJSON())
 if __name__ == "__main__":
+
     x = Transaction()
     print(x.toJSON())
     print(x.toEncodedJSON())
