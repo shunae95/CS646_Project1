@@ -7,6 +7,7 @@ Date: 2022-09-17
 from distutils.log import error
 from email.policy import default
 import hashlib
+import random
 import os
 from Transaction import Transaction
 from Block import Block
