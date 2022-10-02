@@ -4,14 +4,17 @@ We have read the UAB Academic Integrity Code and understand that any breach of t
 Student signature(s)/initials: TK, AN, LA
 Date: 2022-09-17
 """
+from distutils.log import error
+from email.policy import default
 import hashlib
+import random
 import os
 from Transaction import Transaction
 from Block import Block
-from Wallet import Wallet
-# from wallet1.Wallet import Wallet as wallet_one
-# from wallet2.Wallet import Wallet as wallet_two
-# from wallet3.Wallet import Wallet as wallet_three
+from wallet1.Wallet import Wallet
+from wallet1.Wallet import Wallet as wallet_one
+from wallet2.Wallet import Wallet as wallet_two
+from wallet3.Wallet import Wallet as wallet_three
 
 def transactionCreation():
     dirName = os.path.dirname(__file__) # Variable to gain easy access to directory of current folder
@@ -35,6 +38,8 @@ def transactionCreation():
         f.write(newTransaction.toJSON())
     os.rename((dirName+"/"+newTransaction.toEncodedJSON()+".json"), dirName+"/pending/"+ newTransaction.toEncodedJSON()+".json")
 
+    return newTransaction
+
 
 def grabPendingTransactions() -> list:
     transactions = []
@@ -46,8 +51,6 @@ def grabPendingTransactions() -> list:
             transactions.append(transaction)
     
     transactions.sort(key=transactionSort)
-    # for i in transactions:
-    #     print(i.time)
     return transactions
     
 def transactionSort(transaction: Transaction) -> int:
@@ -80,10 +83,15 @@ def processingToBlock():
 
                 f.write(block.generateData())
                 
-                addingToBlock = False
+                addingToBlock = False 
 
 def menu(userWallet: Wallet):
     present = True
+
+    wallet_2 = wallet_two()
+    wallet_3 = wallet_three()
+    wallet_collection = [userWallet, wallet_2, wallet_3]
+
     while present:
         try:
             print("1. \tCheck local wallet balance.")
@@ -93,12 +101,16 @@ def menu(userWallet: Wallet):
 
             response = int(input("> "))
             if (response == 1):
-                print("Implement Local Balance")
-                print(userWallet.address)
+                balance = updateBalance(userWallet.address, wallet_collection)
+                print(str(balance))
             elif (response == 2):
-                print("Implement Remote Balance")
+                searchedAccount = input("What is the address of the wallets balance you would like? ") 
+                searchedAccountBalance = updateBalance(searchedAccount, wallet_collection)
+                print(searchedAccountBalance)
             elif (response == 3):
-                transactionCreation()
+                transaction = transactionCreation()
+                updateBalance(transaction.recipient, wallet_collection, transaction)
+                updateBalance(transaction.sender, wallet_collection, transaction)
             elif (response == 4):
                 processingToBlock()
                 print("Quitting application")
@@ -106,22 +118,48 @@ def menu(userWallet: Wallet):
         except:
             print("Invalid Input.")
 
+def addOrSubtractTransaction(transaction, wallet_collection):
+
+    for wallet in wallet_collection:
+        if transaction == None:
+            return
+        elif transaction.recipient == wallet.address:
+            wallet.balance = wallet.balance + transaction.amount
+        elif transaction.sender == wallet.address:
+            wallet.balance = wallet.balance - transaction.amount
+        else:
+            return wallet.balance
+
+
+def updateBalance(searchedAccount, wallet_collection, transaction = None):
+
+    for wallet in wallet_collection:
+        if searchedAccount == wallet.address:
+            break
+        if transaction != None:
+            if transaction.sender != wallet.address or transaction.sender != wallet.address:
+                error_message = "This transaction can not be completed because recipient wallet can not be found"
+                return error_message
+
+    balance_dictionary = {}
+
+    for wallet in wallet_collection:
+        balance_dictionary[wallet.address] = wallet.balance
+
+    addOrSubtractTransaction(transaction, wallet_collection)
+
+    if (searchedAccount != None):
+        if searchedAccount in balance_dictionary:
+            account_balance = balance_dictionary[searchedAccount]            
+            return "The account balance for wallet: " + str(searchedAccount) + " is " + str(account_balance)
+        else:
+            return "This does not exist"
 
 def main():
 
     # Instantiate 3 separate wallets, each with its own key pairs and address
     wallet = Wallet()
     menu(wallet)
-    # instantiate_wallets = input("Would you like to instantiate the 3 wallets? ").lower()
 
-    # if instantiate_wallets == "y" or addTransaction == "yes":
-    #     wallet_1 = wallet_one()
-    #     wallet_2 = wallet_two()
-    #     wallet_3 = wallet_three()
-    #     print(f"Wallet 1 address: {wallet_1.address}")
-    #     print(f"Wallet 2 address: {wallet_2.address}")
-    #     print(f"Wallet 3 address: {wallet_3.address}")
-    
-    
 if __name__=="__main__":
     main()
