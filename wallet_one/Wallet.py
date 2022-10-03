@@ -130,7 +130,7 @@ def scanBlockchain(address: str) -> tuple:
                 # print(f"From: {fromField}, To: {toField}, Amount: {amountField}")
                 if fromField == address:
                     balance -= amountField
-                elif toField == address:
+                if toField == address:
                     balance += amountField
     # print(f"Final Balance for {address}: {balance}")
     return (balance, latestBlock)
