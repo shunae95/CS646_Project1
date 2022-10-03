@@ -4,20 +4,19 @@ We have read the UAB Academic Integrity Code and understand that any breach of t
 Student signature(s)/initials: TK, AN, LA
 Date: 2022-09-17
 """
+from distutils.log import error
+from email.policy import default
 import hashlib
+import random
 import os
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
 from Transaction import Transaction
 from Block import Block
-from Wallet import Wallet, scanBlockchain
-from Account import Account, searchForAccount
-# from wallet1.Wallet import Wallet as wallet_one
-# from wallet2.Wallet import Wallet as wallet_two
-# from wallet3.Wallet import Wallet as wallet_three
+from wallet1.Wallet import Wallet
+from wallet1.Wallet import Wallet as wallet_one
+from wallet2.Wallet import Wallet as wallet_two
+from wallet3.Wallet import Wallet as wallet_three
 
-def transactionCreation(userWallet: Wallet):
+def transactionCreation():
     dirName = os.path.dirname(__file__) # Variable to gain easy access to directory of current folder
     # transactions = [] # Array that stores transactions
     # addingTransactions = True # Variable that continues the loop if we are adding transactions
@@ -33,15 +32,13 @@ def transactionCreation(userWallet: Wallet):
         # print("Pending folder exists.")
 
 
-    newTransaction = Transaction(userWallet)
-    # print(newTransaction.toBytes())
-    transactionSignature = userWallet.signTransaction(newTransaction) 
-    userWallet.pubkey.verify(transactionSignature, newTransaction.toBytes(), padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()) #Verifies transaction with the public key
+    newTransaction = Transaction()
+
     with open(f"{newTransaction.toEncodedJSON()}.json","w") as f:
         f.write(newTransaction.toJSON())
-    userWallet.account.pendingBalance -= newTransaction.amount #Subtract amount from pending balance
-    print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
     os.rename((dirName+"/"+newTransaction.toEncodedJSON()+".json"), dirName+"/pending/"+ newTransaction.toEncodedJSON()+".json")
+
+    return newTransaction
 
 
 def grabPendingTransactions() -> list:
@@ -54,8 +51,6 @@ def grabPendingTransactions() -> list:
             transactions.append(transaction)
     
     transactions.sort(key=transactionSort)
-    # for i in transactions:
-    #     print(i.time)
     return transactions
     
 def transactionSort(transaction: Transaction) -> int:
@@ -88,90 +83,83 @@ def processingToBlock():
 
                 f.write(block.generateData())
                 
-                addingToBlock = False
-    print("Pending transctions added to block.")
+                addingToBlock = False 
 
 def menu(userWallet: Wallet):
     present = True
+
+    wallet_2 = wallet_two()
+    wallet_3 = wallet_three()
+    wallet_collection = [userWallet, wallet_2, wallet_3]
+
     while present:
         try:
             print("1. \tCheck local wallet balance.")
             print("2. \tCheck wallet balance using address.")
             print("3. \tCreate a transaction.")
-            print("4. \tProcess pending transactions to block.")
-            print("5. \tExit application and process transactions.")
+            print("4. \tExit application.")
 
             response = int(input("> "))
             if (response == 1):
-                # print("IMPLEMENT SHOWING PENDING BALANCE AS WELL, THIS WOULD REQUIRE UPADTING THE ACCOUNTS JSON PER TRANSACTION")
-                # print("PENDING ONLY DISPLAYS OUTGOING AND DOES NOT CONSIDER INCOMING TRANSACTIONS")
-                print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
+                balance = updateBalance(userWallet.address, wallet_collection)
+                print(str(balance))
             elif (response == 2):
-                address = input("Address: ")
-                print(f"Current balance for {address}: {scanBlockchain(address)[0]}")
+                searchedAccount = input("What is the address of the wallets balance you would like? ") 
+                searchedAccountBalance = updateBalance(searchedAccount, wallet_collection)
+                print(searchedAccountBalance)
             elif (response == 3):
-                transactionCreation(userWallet)
-                # accountDB = updateAccountDB(userWallet.account)
-                # rewriteAddressDatabase()
-                # userWallet.balance, userWallet.latestBlock = scanBlockchain(userWallet.address) ?????? To update balance but latest block cannot really be updated since a newly created transaction will not be in a block yet
+                transaction = transactionCreation()
+                updateBalance(transaction.recipient, wallet_collection, transaction)
+                updateBalance(transaction.sender, wallet_collection, transaction)
             elif (response == 4):
-                processingToBlock() # Process Transaction into block
-                userWallet.account.balance = userWallet.account.pendingBalance # Set pending balance to official balance
-                updateAccountDB(userWallet.account) # Send account balance back to database
-                # rewriteAddressDatabase()
-            
-            elif (response == 5):
                 processingToBlock()
-                userWallet.account.balance = userWallet.account.pendingBalance
-                updateAccountDB(userWallet.account)
-                # rewriteAddressDatabase()
-                print("Quitting application.")
+                print("Quitting application")
                 present = False
-        except InvalidSignature: 
-            print("Invalid Signature for created transaction. Discarding transaction.")
         except:
             print("Invalid Input.")
 
-def updateAccountDB(userAccount: Account):
-    accountDB = Account.getAccList()
-    for entry in accountDB:
-        if userAccount.address == entry.address:
-            entry.balance = userAccount.balance
-            print("")
-            # entry.pendingBalance = userAccount.balance
-    file_path =  os.path.dirname(__file__) + "/Accounts.json"
-    with open(file_path, "w") as f:
-        for entry in accountDB:
-            f.write("{"+f"{entry.address},{entry.publicKey()},{entry.balance}"+"}\n")
-    return accountDB
+def addOrSubtractTransaction(transaction, wallet_collection):
+
+    for wallet in wallet_collection:
+        if transaction == None:
+            return
+        elif transaction.recipient == wallet.address:
+            wallet.balance = wallet.balance + transaction.amount
+        elif transaction.sender == wallet.address:
+            wallet.balance = wallet.balance - transaction.amount
+        else:
+            return wallet.balance
+
+
+def updateBalance(searchedAccount, wallet_collection, transaction = None):
+
+    for wallet in wallet_collection:
+        if searchedAccount == wallet.address:
+            break
+        if transaction != None:
+            if transaction.sender != wallet.address or transaction.sender != wallet.address:
+                error_message = "This transaction can not be completed because recipient wallet can not be found"
+                return error_message
+
+    balance_dictionary = {}
+
+    for wallet in wallet_collection:
+        balance_dictionary[wallet.address] = wallet.balance
+
+    addOrSubtractTransaction(transaction, wallet_collection)
+
+    if (searchedAccount != None):
+        if searchedAccount in balance_dictionary:
+            account_balance = balance_dictionary[searchedAccount]            
+            return "The account balance for wallet: " + str(searchedAccount) + " is " + str(account_balance)
+        else:
+            return "This does not exist"
 
 def main():
 
     # Instantiate 3 separate wallets, each with its own key pairs and address
-    accountDB = Account.getAccList()
-        
     wallet = Wallet()
-
-    if searchForAccount(wallet.address) != None: 
-        wallet.account = searchForAccount(wallet.address)
-    else:
-        newAcc = Account(wallet.address, wallet.getPubKeyBytes().decode("utf-8"), scanBlockchain(wallet.address)[0])
-        wallet.account = newAcc
-        accountDB = newAcc.addAccToDB(accountDB)
-        updateAccountDB(wallet.account)
-    # wallet.account.balance = scanBlockchain(wallet.address)[0]
-
     menu(wallet)
-    # instantiate_wallets = input("Would you like to instantiate the 3 wallets? ").lower()
 
-    # if instantiate_wallets == "y" or addTransaction == "yes":
-    #     wallet_1 = wallet_one()
-    #     wallet_2 = wallet_two()
-    #     wallet_3 = wallet_three()
-    #     print(f"Wallet 1 address: {wallet_1.address}")
-    #     print(f"Wallet 2 address: {wallet_2.address}")
-    #     print(f"Wallet 3 address: {wallet_3.address}")
-    
-    
 if __name__=="__main__":
     main()
