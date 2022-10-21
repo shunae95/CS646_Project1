@@ -46,6 +46,7 @@ class Transaction:
         return str.encode(self.toJSON())
 if __name__ == "__main__":
     x = Transaction()
+    print(x.toBytes())
     print(x.toJSON())
     print(x.toEncodedJSON())
 

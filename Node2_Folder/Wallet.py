@@ -13,18 +13,15 @@ from os.path import exists
 import hashlib
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from cryptography.exceptions import InvalidSignature
 import base64
 import json
-import random
 
 from Transaction import Transaction
 from Block import Block
 from Account import Account, searchForAccount
 
-PORT_CHOICES = [2000,2001]
-SELECTED_PORT = random.choice(PORT_CHOICES)
+
 
 class Wallet:
     """
@@ -51,7 +48,6 @@ class Wallet:
             public_exponent=65537, 
             key_size=2048,
         )
-
         pem = private_key.private_bytes(
             encoding = serialization.Encoding.PEM,
             format = serialization.PrivateFormat.PKCS8,
@@ -151,44 +147,30 @@ Not used, but would returned a selected account from the database if it matched 
 #     return None
 
 def transactionCreation(userWallet: Wallet):
+    dirName = os.path.dirname(os.path.dirname(__file__)) # Variable to gain easy access to directory of current folder
+    # transactions = [] # Array that stores transactions
+    # addingTransactions = True # Variable that continues the loop if we are adding transactions
+    try:
+        os.mkdir(dirName + "/processed") # Try to create the processed directory
+    except FileExistsError:
+        pass
+        # print("Processed folder exists.")
+    try:
+        os.mkdir(dirName + "/pending") # Try to create the pending directory.
+    except FileExistsError:
+        pass
+        # print("Pending folder exists.")
+
+
     newTransaction = Transaction(userWallet)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((socket.gethostname(), SELECTED_PORT))
-    dataList = [newTransaction.toBytes(), userWallet.signTransaction(newTransaction), userWallet.getPubKeyBytes()]
-    # print(dataList[1])
-    byteList = b'__||__'.join(dataList)
-    s.sendall(byteList)
-    s.recv(1024)
-    # clean = float(data.decode("utf-8"))
-    # if clean != -1:
-    #     userWallet.account.balance += clean
-    s.close()
-
-# def transactionCreation(userWallet: Wallet):
-#     dirName = os.path.dirname(os.path.dirname(__file__)) # Variable to gain easy access to directory of current folder
-#     # transactions = [] # Array that stores transactions
-#     # addingTransactions = True # Variable that continues the loop if we are adding transactions
-#     try:
-#         os.mkdir(dirName + "/processed") # Try to create the processed directory
-#     except FileExistsError:
-#         pass
-#         # print("Processed folder exists.")
-#     try:
-#         os.mkdir(dirName + "/pending") # Try to create the pending directory.
-#     except FileExistsError:
-#         pass
-#         # print("Pending folder exists.")
-
-
-#     newTransaction = Transaction(userWallet)
-#     # print(newTransaction.toBytes())
-#     transactionSignature = userWallet.signTransaction(newTransaction) 
-#     userWallet.pubkey.verify(transactionSignature, newTransaction.toBytes(), padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()) #Verifies transaction with the public key
-#     with open(f"{dirName}/{newTransaction.toEncodedJSON()}.json","w") as f:
-#         f.write(newTransaction.toJSON())
-#     userWallet.account.pendingBalance -= newTransaction.amount #Subtract amount from pending balance
-#     print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
-#     os.rename((dirName+"/"+newTransaction.toEncodedJSON()+".json"), dirName+"/pending/"+ newTransaction.toEncodedJSON()+".json")
+    # print(newTransaction.toBytes())
+    transactionSignature = userWallet.signTransaction(newTransaction) 
+    userWallet.pubkey.verify(transactionSignature, newTransaction.toBytes(), padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()) #Verifies transaction with the public key
+    with open(f"{dirName}/{newTransaction.toEncodedJSON()}.json","w") as f:
+        f.write(newTransaction.toJSON())
+    userWallet.account.pendingBalance -= newTransaction.amount #Subtract amount from pending balance
+    print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
+    os.rename((dirName+"/"+newTransaction.toEncodedJSON()+".json"), dirName+"/pending/"+ newTransaction.toEncodedJSON()+".json")
 
 
 def grabPendingTransactions() -> list:
@@ -209,17 +191,14 @@ def transactionSort(transaction: Transaction) -> int:
     return transaction.time
 
 
-# def processingToBlock():
-#     dirName = os.path.dirname(os.path.dirname(__file__))
-#     if len(list(os.scandir(dirName + "/pending"))) > 0:
-#         transactions = grabPendingTransactions()
-#         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         s.connect((socket.gethostname(), 2000))
-
-#         s.sendall(bytes(json.dumps(list(map(Transaction.toJSON,transactions))), "utf-8"))
-#         data = s.recv(1024)
-#         print(f"DATA: {data}")
-#         s.close()
+def processingToBlock():
+    dirName = os.path.dirname(os.path.dirname(__file__))
+    if len(list(os.scandir(dirName + "/pending"))) > 0:
+        transactions = grabPendingTransactions()
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((socket.gethostname(), 2000))
+        s.sendall(bytes(json.dumps(list(map(Transaction.toJSON,transactions))), "utf-8"))
+        s.close()
         # addingToBlock = True # Variable to manage the adding to the block loop
         # height = 0 # Starting height 
         # while addingToBlock:
@@ -259,50 +238,46 @@ def transactionSort(transaction: Transaction) -> int:
 
 
 def menu(userWallet: Wallet):
-    print(f"Selected Node: {SELECTED_PORT}")
     present = True
     while present:
         # try:
             print("1. \tCheck local wallet balance.")
             print("2. \tCheck wallet balance using address.")
             print("3. \tCreate a transaction.")
-            print("4. \tExit application.")
+            print("4. \tProcess pending transactions to block.")
+            print("5. \tExit application and process transactions.")
 
             response = int(input("> "))
             if (response == 1):
                 # print("IMPLEMENT SHOWING PENDING BALANCE AS WELL, THIS WOULD REQUIRE UPADTING THE ACCOUNTS JSON PER TRANSACTION")
                 # print("PENDING ONLY DISPLAYS OUTGOING AND DOES NOT CONSIDER INCOMING TRANSACTIONS")
-                # if userWallet.account.balance != scanBlockchain(userWallet.address)[0]:
-                #     userWallet.account.balance = scanBlockchain(userWallet.address)[0]
-                #     userWallet.account.pendingBalance = userWallet.account.balance
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((socket.gethostname(), SELECTED_PORT))
-                message = bytes(f"checkBalance__||__{userWallet.address}","utf-8")
-                s.sendall(message)
-                data = s.recv(1024)
-                s.close()
-                userWallet.account.balance = float(data)
-
-                print(f"Current balance for {userWallet.address}: {userWallet.account.balance}")
+                if userWallet.account.balance != scanBlockchain(userWallet.address)[0]:
+                    userWallet.account.balance = scanBlockchain(userWallet.address)[0]
+                    userWallet.account.pendingBalance = userWallet.account.balance
+                print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
             elif (response == 2):
                 address = input("Address: ")
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((socket.gethostname(), SELECTED_PORT))
-                message = bytes(f"checkBalance__||__{address}","utf-8")
-                s.sendall(message)
-                data = s.recv(1024)
-                s.close()
-                print(f"Current balance for {address}: {float(data)}")
+                print(f"Current balance for {address}: {scanBlockchain(address)[0]}")
             elif (response == 3):
                 transactionCreation(userWallet)
                 # accountDB = updateAccountDB(userWallet.account)
                 # rewriteAddressDatabase()
                 # userWallet.balance, userWallet.latestBlock = scanBlockchain(userWallet.address) ?????? To update balance but latest block cannot really be updated since a newly created transaction will not be in a block yet
-            
             elif (response == 4):
+                processingToBlock() # Process Transaction into block
+                # userWallet.account.balance = userWallet.account.pendingBalance # Set pending balance to official balance
+                userWallet.account.balance = scanBlockchain(userWallet.address)[0]
+                userWallet.account.pendingBalance = userWallet.account.balance
+                updateAccountDB(userWallet.account) # Send account balance back to database
+                # rewriteAddressDatabase()
+            
+            elif (response == 5):
+                processingToBlock()
                 
                 # userWallet.account.balance = userWallet.account.pendingBalance
-
+                userWallet.account.balance = scanBlockchain(userWallet.address)[0]
+                userWallet.account.pendingBalance = userWallet.account.balance
+                updateAccountDB(userWallet.account)
                 # rewriteAddressDatabase()
                 print("Quitting application.")
                 present = False
@@ -337,9 +312,7 @@ def main():
     accountDB = Account.getAccList()
         
     wallet = Wallet()
-    # print(wallet.getPubKeyBytes())
-    # x = load_pem_public_key(wallet.getPubKeyBytes())
-    # print(x.public_bytes(encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.PKCS1,) == wallet.getPubKeyBytes())
+
     if searchForAccount(wallet.address) != None: 
         wallet.account = searchForAccount(wallet.address)
     else:
