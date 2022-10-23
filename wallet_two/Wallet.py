@@ -26,6 +26,7 @@ from Account import Account, searchForAccount
 PORT_CHOICES = [2000,2001]
 SELECTED_PORT = random.choice(PORT_CHOICES)
 
+
 class Wallet:
     """
     Creates an instance of a wallet. Will read the wallet's existing private key
@@ -164,98 +165,9 @@ def transactionCreation(userWallet: Wallet):
     #     userWallet.account.balance += clean
     s.close()
 
-# def transactionCreation(userWallet: Wallet):
-#     dirName = os.path.dirname(os.path.dirname(__file__)) # Variable to gain easy access to directory of current folder
-#     # transactions = [] # Array that stores transactions
-#     # addingTransactions = True # Variable that continues the loop if we are adding transactions
-#     try:
-#         os.mkdir(dirName + "/processed") # Try to create the processed directory
-#     except FileExistsError:
-#         pass
-#         # print("Processed folder exists.")
-#     try:
-#         os.mkdir(dirName + "/pending") # Try to create the pending directory.
-#     except FileExistsError:
-#         pass
-#         # print("Pending folder exists.")
 
-
-#     newTransaction = Transaction(userWallet)
-#     # print(newTransaction.toBytes())
-#     transactionSignature = userWallet.signTransaction(newTransaction) 
-#     userWallet.pubkey.verify(transactionSignature, newTransaction.toBytes(), padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()) #Verifies transaction with the public key
-#     with open(f"{dirName}/{newTransaction.toEncodedJSON()}.json","w") as f:
-#         f.write(newTransaction.toJSON())
-#     userWallet.account.pendingBalance -= newTransaction.amount #Subtract amount from pending balance
-#     print(f"Current balance for {userWallet.address}: {userWallet.account.balance} (Pending Balance: {userWallet.account.pendingBalance})")
-#     os.rename((dirName+"/"+newTransaction.toEncodedJSON()+".json"), dirName+"/pending/"+ newTransaction.toEncodedJSON()+".json")
-
-
-def grabPendingTransactions() -> list:
-    transactions = []
-    dirName = os.path.dirname(os.path.dirname(__file__))+"/pending"
-    for file in os.scandir(dirName):
-        with open(file.path, "r") as f:
-            string = f.read()
-            transaction = Transaction(string)
-            transactions.append(transaction)
-    
-    transactions.sort(key=transactionSort)
-    # for i in transactions:
-    #     print(i.time)
-    return transactions
-    
 def transactionSort(transaction: Transaction) -> int:
     return transaction.time
-
-
-# def processingToBlock():
-#     dirName = os.path.dirname(os.path.dirname(__file__))
-#     if len(list(os.scandir(dirName + "/pending"))) > 0:
-#         transactions = grabPendingTransactions()
-#         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         s.connect((socket.gethostname(), 2000))
-
-#         s.sendall(bytes(json.dumps(list(map(Transaction.toJSON,transactions))), "utf-8"))
-#         data = s.recv(1024)
-#         print(f"DATA: {data}")
-#         s.close()
-        # addingToBlock = True # Variable to manage the adding to the block loop
-        # height = 0 # Starting height 
-        # while addingToBlock:
-        #     while os.path.exists(dirName + f"/B_{height}.json"): # If a block at the current height exists, increment one
-        #         height += 1 
-
-
-# def processingToBlock():
-#     dirName = os.path.dirname(os.path.dirname(__file__))
-#     if len(list(os.scandir(dirName + "/pending"))) > 0:
-#         transactions = grabPendingTransactions()
-#         addingToBlock = True # Variable to manage the adding to the block loop
-#         height = 0 # Starting height 
-#         while addingToBlock:
-#             while os.path.exists(dirName + f"/B_{height}.json"): # If a block at the current height exists, increment one
-#                 height += 1 
-#             with open(f"{dirName}/B_{height}.json", "w") as f: 
-#                 if height == 0: # If height is 0 then use the default previous hash
-#                     block = Block(height, "NA")
-#                 else: # Else use the hash of the previous block.
-#                     with open(f"{dirName}/B_{height-1}.json", "rb") as oldBlock:
-#                         oldHash = hashlib.sha256(oldBlock.read()).hexdigest()
-#                     block = Block(height, oldHash)
-                
-#                 for entry in transactions: # Add each pending transaction into the block's transaction array
-#                     block.addTransaction(entry)
-
-#                 block.completedTransactions = list(map(Transaction.toEncodedJSON, transactions))
-#                 for file in os.scandir(dirName + "/pending"):
-#                     if file.name[:-5] in block.completedTransactions:
-#                         os.rename(dirName+"/pending/"+ file.name, dirName+"/processed/"+ file.name)
-
-#                 f.write(block.generateData())
-                
-#                 addingToBlock = False
-#     print("Pending transctions added to block.")
 
 
 def menu(userWallet: Wallet):
@@ -268,7 +180,11 @@ def menu(userWallet: Wallet):
             print("3. \tCreate a transaction.")
             print("4. \tExit application.")
 
-            response = int(input("> "))
+            try:
+                response = int(input("> "))
+            except:
+                print("Invalid Input. Please choose again.")
+            
             if (response == 1):
                 # print("IMPLEMENT SHOWING PENDING BALANCE AS WELL, THIS WOULD REQUIRE UPADTING THE ACCOUNTS JSON PER TRANSACTION")
                 # print("PENDING ONLY DISPLAYS OUTGOING AND DOES NOT CONSIDER INCOMING TRANSACTIONS")
@@ -298,18 +214,14 @@ def menu(userWallet: Wallet):
                 # accountDB = updateAccountDB(userWallet.account)
                 # rewriteAddressDatabase()
                 # userWallet.balance, userWallet.latestBlock = scanBlockchain(userWallet.address) ?????? To update balance but latest block cannot really be updated since a newly created transaction will not be in a block yet
-            
-            elif (response == 4):
-                
+            elif (response == 4):                
                 # userWallet.account.balance = userWallet.account.pendingBalance
-
                 # rewriteAddressDatabase()
                 print("Quitting application.")
                 present = False
         # except InvalidSignature : 
         #     print("Invalid Signature for created transaction. Discarding transaction.")
-        # except:
-        #     print("Invalid Input.")
+      
 
 def updateAccountDB(userAccount: Account):
     accountDB = Account.getAccList()
@@ -318,7 +230,7 @@ def updateAccountDB(userAccount: Account):
         if userAccount.address == entry.address:
             entry.balance = userAccount.balance
         else:
-            entry.balance = scanBlockchain(entry.address)[0]
+            entry.balance = float(scanBlockchain(entry.address)[0])
             # entry.pendingBalance = userAccount.balance
     file_path =  os.path.dirname(os.path.dirname(__file__)) + "/Accounts.json"
     with open(file_path, "w") as f:
@@ -337,9 +249,7 @@ def main():
     accountDB = Account.getAccList()
         
     wallet = Wallet()
-    # print(wallet.getPubKeyBytes())
-    # x = load_pem_public_key(wallet.getPubKeyBytes())
-    # print(x.public_bytes(encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.PKCS1,) == wallet.getPubKeyBytes())
+
     if searchForAccount(wallet.address) != None: 
         wallet.account = searchForAccount(wallet.address)
     else:
@@ -350,18 +260,6 @@ def main():
     # wallet.account.balance = scanBlockchain(wallet.address)[0]
 
     menu(wallet)
-    # instantiate_wallets = input("Would you like to instantiate the 3 wallets? ").lower()
-
-    # if instantiate_wallets == "y" or addTransaction == "yes":
-    #     wallet_1 = wallet_one()
-    #     wallet_2 = wallet_two()
-    #     wallet_3 = wallet_three()
-    #     print(f"Wallet 1 address: {wallet_1.address}")
-    #     print(f"Wallet 2 address: {wallet_2.address}")
-    #     print(f"Wallet 3 address: {wallet_3.address}")
 
 if __name__ == "__main__":
-    # print(x.pubkey_bytes)
-    # print(x.address)
-    # scanBlockchain("Zoey")
     main()

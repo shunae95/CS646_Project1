@@ -24,8 +24,6 @@ class Node:
         
     def getOrCreateTxnDir(self):
         dirName = os.path.dirname(__file__)# Variable to gain easy access to directory of current folder
-        # transactions = [] # Array that stores transactions
-        # addingTransactions = True # Variable that continues the loop if we are adding transactions
         try:
             os.mkdir(dirName + "/processed") # Try to create the processed directory
         except FileExistsError:
@@ -50,18 +48,6 @@ class Node:
         # Output: 57bc6f8255b180cbaf73f286b107be0506713b32cfe8f41af29e5c1e17f8ca6d
         return hashlib.sha256(str.encode(string)).hexdigest()
 
-# def download():
-#     while True:
-#         try:
-#             down = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#             down.bind((S))
-
-#         except ConnectionRefusedError:
-#             print("Could not connect to other node, retrying in 15 seconds.")
-#             time.sleep(15)
-#         except ConnectionResetError:
-#             print("Lost connection to other node, reestablishing in 15 seconds.")
-#             time.sleep(15)
 
 def update(data):
 
@@ -195,7 +181,7 @@ def scanBlockchain(address: str) -> tuple:
                 balance -= amountField
             if toField == address:
                 balance += amountField
-    # print(f"Final Balance for {address}: {balance}")
+    print(f"Final Balance for {address}: {balance}")
     return (balance, latestBlock)
 
 
@@ -223,7 +209,7 @@ if __name__ == "__main__":
             print("No data incoming.")
         client, address = s.accept()
         # client.sendall((bytes("Port 2000", "utf-8")))
-        data =  client.recv(2048)
+        data =  client.recv(4096)
         
 
         if len(data) > 0 and data.startswith(b"minerUpdate__||__"):
