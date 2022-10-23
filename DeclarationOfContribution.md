@@ -5,7 +5,7 @@ We also declare that the following percentage distribution faithfully represents
 
 | Name | Overall Contribution (%) | Major work items completed by me | Signature / initials |	Date |
 | :--------------- |:---------------| :-----| :------|:---|
-| Tiara King | 35% | Repository set up, transaction code, testing | TK | 2022-09-17 |
-| AJ Nettles | 35% | Transaction code, block code, readme, testing | AN | 2022-09-17 |
-| Leigh Allison | 30% | Readme, testing, release packaging | LA | 2022-09-17 |
+| AJ Nettles | 40% | Mining, new functionality, testing | AN | 2022-10-23 |
+| Tiara King | 30% | Client and server setup, testing | TK | 2022-10-23 |
+| Leigh Allison | 30% | Testing, debugging, release packaging | LA | 2022-10-23 |
 # 
