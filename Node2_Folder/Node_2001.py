@@ -46,9 +46,6 @@ class Node:
             print("Forked folder exists.")
         
         
-        with open(f"{os.path.dirname(dirName)}/signatures.json", "a"):
-            pass
-
     def addPendingTransaction(self, transaction):
         dirName = os.path.dirname(__file__)# Variable to gain easy access to directory of current folder
         if not os.path.exists(f"{dirName}/pending/{self.encode(transaction)}.json"):
