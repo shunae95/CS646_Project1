@@ -4,6 +4,7 @@ We have read the UAB Academic Integrity Code and understand that any breach of t
 Student signature(s)/initials: TK, AN, LA
 Date: 2022-09-17
 """
+import os
 import hashlib
 import time
 class Block:
@@ -14,13 +15,16 @@ class Block:
         hash = hashlib.sha256(str.encode(self.body)).hexdigest() #Generating hash of body to include in header
         self.prevHash = prevHash
         self.height = height
+        self.valid = True
         self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +'"}' #Header data format
         self.data = "{" + f'{self.header},{self.body}' + "}" #JSON string of header and body combined
 
     def generateHeader(self):
         self.generateBody()
         hash = hashlib.sha256(str.encode(self.body)).hexdigest() #Generating hash of body to include in header
-        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +'"}'
+        print(int(time.time()))
+        proof = self.proof(self.body)
+        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +'","proof":' + f"{proof}" + '}'
 
     def generateBody(self):
         content = ""
@@ -47,5 +51,30 @@ class Block:
 
     def completedTransaction(self, hash):
         self.completedTransactions.append(hash)
+
+    def proof(self, text) -> int:
+        target = 250000000000000000000000000000000000000000000000000000000000000000000000000
+        # target = 5500000000000000000000000000000000000000000000000000000000000000000000 some minutes
+        # target = 550000000000000000000000000000000000000000000000000000000000000000000 abount 1-4 Minutes
+        running = True
+        nonce = 0
+        print("Block started.")
+        while running:
+            string = f"{text}{nonce}"
+            hash = hashlib.sha256(string.encode()).hexdigest()
+            value = int(hash, base=16)
+            if value < target:
+                # print(f"{string} - {hash} - {value}")
+                print("PoW completed.")
+                running = False
+            else:
+                nonce += 1
+            if os.path.exists(os.path.dirname(__file__) + f"/B_{self.height}.json"):
+                self.valid = False
+                print("Block already exists.")
+                return -1
+        print("Block completed.")
+        return nonce
+    
 if __name__ == "__main__":
     print(Block(0, "NA").data)
