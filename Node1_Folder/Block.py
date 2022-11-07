@@ -9,20 +9,23 @@ Code samples taken from python cryptography package documentation at https://cry
 import hashlib
 import time
 class Block:
-    def __init__(self, height, prevHash): #Only used if this is the initial block in chain.
+    def __init__(self, height, prevHash, nonce): #Only used if this is the initial block in chain.
         self.transactions = [] # Holds transaction objects
         self.completedTransactions = []
         self.body = '"body":[{"hash":"57bc6f8255b180cbaf73f286b107be0506713b32cfe8f41af29e5c1e17f8ca6d","content":{"timestamp":1660791892,"from":"me","to":"you","amount":100000}}]' #Body data format
         hash = hashlib.sha256(str.encode(self.body)).hexdigest() #Generating hash of body to include in header
         self.prevHash = prevHash
         self.height = height
-        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +'"}' #Header data format
+        self.target = "0"
+        self.nonce = nonce
+        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash  +f'","target":"{self.target}","nonce":"'+ str(self.nonce) +'"}' #Header data format
         self.data = "{" + f'{self.header},{self.body}' + "}" #JSON string of header and body combined
+        
 
     def generateHeader(self):
         self.generateBody()
         hash = hashlib.sha256(str.encode(self.body)).hexdigest() #Generating hash of body to include in header
-        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +'"}'
+        self.header = '"header":{"height":'+ str(self.height) +f',"timestamp":{int(time.time())},"previousblock":"{self.prevHash}","hash":"'+ hash +f'","target":"{self.target}","nonce":"'+ str(self.nonce) +'"}'
 
     def generateBody(self):
         content = ""
@@ -49,5 +52,6 @@ class Block:
 
     def completedTransaction(self, hash):
         self.completedTransactions.append(hash)
+
 if __name__ == "__main__":
     print(Block(0, "NA").data)

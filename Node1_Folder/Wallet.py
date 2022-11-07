@@ -158,8 +158,10 @@ def transactionCreation(userWallet: Wallet):
     dataList = [newTransaction.toBytes(), userWallet.signTransaction(newTransaction), userWallet.getPubKeyBytes()]
     # print(dataList[1])
     byteList = b'__||__'.join(dataList)
+    print("Sending byteList:",byteList)
     s.sendall(byteList)
-    s.recv(1024)
+    m = s.recv(1024)
+    print("Got back", m)
     # clean = float(data.decode("utf-8"))
     # if clean != -1:
     #     userWallet.account.balance += clean

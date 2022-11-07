@@ -8,7 +8,7 @@ Code samples taken from python cryptography package documentation at https://cry
 """
 import json
 import socket
-from time import time
+import time
 import threading
 import Wallet
 from Transaction import Transaction
@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from cryptography.exceptions import InvalidSignature
 
-TRANSACTIONS_NEEDED_FOR_BLOCK = 10
+TRANSACTIONS_NEEDED_FOR_BLOCK = 3
 SELECTED_PORT = 2000
 ALTERNATIVE_NODE = 2001
 # updateRequest = False
@@ -58,7 +58,7 @@ class Node:
 
 
 def update(data):
-
+    """Sends transaction or block completion data to other miners."""
     while True:
         try:
 
@@ -69,11 +69,6 @@ def update(data):
             r.close()
             print("New data sent.")
             return
-                # while True:
-                #     data = r.recv(4096)
-                #     if len(data) != 0:
-                #         print(data)
-                #     r.close()
 
         except ConnectionRefusedError:
             print("Could not connect to other node, retrying in 15 seconds.")
@@ -87,7 +82,7 @@ def checkToCreateNewBlock(Node):
     files = [(entry) for entry in os.listdir(dirName+"/pending") if entry.endswith(".json")]
     if len(files) >= TRANSACTIONS_NEEDED_FOR_BLOCK:
         print("Creating a new block.", end="")
-        processingToBlock(Node)
+        buildingNextBlock(Node)
 
 def grabPendingTransactions() -> list:
     transactions = []
@@ -110,37 +105,73 @@ def transactionSort(transaction: Transaction) -> int:
     return transaction.time
 
 
-def processingToBlock(Node: Node):
+def buildingNextBlock(Node: Node):
     dirName = os.path.dirname(__file__)
-    transactions = grabPendingTransactions()
-    transactions.insert(0, Transaction('{' + f'"timestamp":{int(time())},"from":"Coinbase","to":"' + Node.wallet.getOrCreateAddress() + f'","amount":{random()}' + '}'))
-    Node.addPendingTransaction(transactions[0].toJSON())
-    update(transactions[0].toJSON())
-    addingToBlock = True # Variable to manage the adding to the block loop
     height = 0 # Starting height 
-    while addingToBlock:
-        while os.path.exists(dirName + f"/B_{height}.json"): # If a block at the current height exists, increment one
-            height += 1 
-        with open(f"{dirName}/B_{height}.json", "w") as f: 
-            if height == 0: # If height is 0 then use the default previous hash
-                block = Block(height, "NA")
-            else: # Else use the hash of the previous block.
-                with open(f"{dirName}/B_{height-1}.json", "rb") as oldBlock:
-                    oldHash = hashlib.sha256(oldBlock.read()).hexdigest()
-                block = Block(height, oldHash)
-            
-            for entry in transactions: # Add each pending transaction into the block's transaction array
-                block.addTransaction(entry)
+    while os.path.exists(dirName + f"/B_{height}.json"): # If a block at the current height exists, increment one
+        height += 1 
 
-            block.completedTransactions = list(map(Transaction.toEncodedJSON, transactions))
-            for file in os.scandir(dirName + "/pending"):
-                if file.name[:-5] in block.completedTransactions:
-                    os.rename(dirName+"/pending/"+ file.name, dirName+"/processed/"+ file.name)
-            data = block.generateData()
-            f.write(data)
-            update(data)
-            addingToBlock = False
-    print("Pending transctions added to block.")
+    nonceFound = False
+    nonce = 0
+    start = time.time()
+
+    while not nonceFound:
+        transactions = grabPendingTransactions()
+        transactions.insert(0, Transaction('{' + f'"timestamp":{int(time.time())},"from":"Coinbase","to":"' + Node.wallet.getOrCreateAddress() + f'","amount":{random()}' + '}'))
+        Node.addPendingTransaction(transactions[0].toJSON())
+        # update(transactions[0].toJSON())
+        # addingToBlock = True # Variable to manage the adding to the block loop
+        
+        if height == 0: # If height is 0 then use the default previous hash
+            block = Block(height, "NA", 0)
+        else: # Else use the hash of the previous block.
+            with open(f"{dirName}/B_{height-1}.json", "rb") as oldBlock:
+                oldHash = hashlib.sha256(oldBlock.read()).hexdigest()
+            block = Block(height, oldHash, nonce)
+        
+        for entry in transactions: # Add each pending transaction into the block's transaction array
+            block.addTransaction(entry)
+
+        # Search for nonce
+        data = block.generateData()
+        jsonvalue = json.dumps(data)
+        blockhash = hashlib.sha256(jsonvalue.encode('utf-8')).hexdigest()
+        if str(blockhash)[0:len(block.target)] == block.target:
+            nonceFound = True
+        nonce = nonce+1
+    
+    
+    end = time.time()
+    print("NONCE FOUND IN", end - start, "seconds")
+    
+    # Once found, write the block        
+    with open(f"{dirName}/B_{height}.json", "w") as f: 
+        f.write(data)
+
+    # Send the new block to other miners
+    update(data)
+    
+    # Move transactions in block from pending to processed
+    block.completedTransactions = list(map(Transaction.toEncodedJSON, transactions))
+    for file in os.scandir(dirName + "/pending"):
+        if file.name[:-5] in block.completedTransactions:
+            os.rename(dirName+"/pending/"+ file.name, dirName+"/processed/"+ file.name)
+
+        
+    print(f"Block {height} created")
+
+def validateBlock(block, hash):
+    target = "00"
+    jsonvalue = json.dumps(block)
+    print(jsonvalue)
+    blockhash = hashlib.sha256(jsonvalue.encode('utf-8')).hexdigest()
+    print(blockhash)
+    if str(blockhash)[0:len(target)] == target and blockhash == hash:
+        print("Block is valid")
+        return True
+    else:
+        print("Block is invalid")
+        return False
 
 def scanBlockchain(address: str) -> tuple:
     balance = 0
@@ -197,8 +228,6 @@ if __name__ == "__main__":
     x = Node()
     print(f"Wallet: {x.wallet.getOrCreateAddress()}")
     
-    # downThread = threading.Thread(target=update, daemon=True)
-    # downThread.start()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', SELECTED_PORT))
     s.listen(5)
@@ -210,14 +239,11 @@ if __name__ == "__main__":
     while True:
         try:
             pass
-            # r.connect((socket.gethostname(), 2001))
-            # r.recv(2048)
-            # r.close()
         except TimeoutError:
             print("No data incoming.")
         client, address = s.accept()
-        # client.sendall((bytes("Port 2000", "utf-8")))
-        data =  client.recv(4096)
+        data = client.recv(4096)
+        print("Got some data", data)
         
 
         if len(data) > 0 and data.startswith(b"minerUpdate__||__"):
@@ -225,13 +251,18 @@ if __name__ == "__main__":
             usefulData = data.split(b"__||__")[1].decode().lstrip("b").strip("'")
             # print("\n\n\n")
             # print(usefulData)
-            if usefulData.startswith("{\"timestamp\""):
+            if usefulData.startswith("{\"timestamp\""): # it's a transaction
                 x.addPendingTransaction(usefulData)
-            elif usefulData.startswith("{\"header\""):
+            elif usefulData.startswith("{\"header\""):  # it's a block
                 dirName = os.path.dirname(__file__)
-                for file in os.scandir(dirName+"/pending/"):
-                    if file.name[:-5] in usefulData:
-                        os.rename(file.path, dirName+"/processed/"+file.name)
+                # Validate the block
+                jsonvalue = json.dumps(usefulData)
+                blockhash = hashlib.sha256(jsonvalue.encode('utf-8')).hexdigest()
+                if validateBlock(usefulData, blockhash) == True:
+                    # Move pending transactions to processed
+                    for file in os.scandir(dirName+"/pending/"):
+                        if file.name[:-5] in usefulData:
+                            os.rename(file.path, dirName+"/processed/"+file.name)
                 addingToBlock = True # Variable to manage the adding to the block loop
                 height = 0 # Starting height 
                 while addingToBlock:
@@ -295,8 +326,7 @@ if __name__ == "__main__":
 
             except InvalidSignature:
                 print("Error: Invalid signature on transaction. Canceling.")
-            # except Exception as ex:
-            #     print(f"Error: {ex.args[0]} Canceling.")
+            
         elif len(data) > 0 and data.startswith(b"checkBalance__||__"):
             address = data.split(b"__||__")[1].decode("UTF-8")
             amount = scanBlockchain(address)[0]
